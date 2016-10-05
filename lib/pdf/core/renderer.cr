@@ -1,4 +1,4 @@
-require "stringio"
+# require "stringio"
 
 module PDF
   module Core
@@ -6,13 +6,13 @@ module PDF
       def initialize(state)
         @state = state
         @state.populate_pages_from_store(self)
-        
+
         min_version(state.store.min_version) if state.store.min_version
 
         @page_number = 0
       end
 
-      attr_reader :state
+      # attr_reader :state
 
       # Creates a new Reference and adds it to the Document's object
       # list.  The +data+ argument is anything that Prawn::PdfObject() can convert.
@@ -62,7 +62,7 @@ module PDF
       # dictionary do not incur the additional overhead.
       #
       def names
-        state.store.root.data[:Names] ||= ref!(:Type => :Names)
+        # state.store.root.data[:Names] ||= ref!(:Type => :Names)
       end
 
       # Returns true if the Names dictionary is in use for this document.
@@ -80,29 +80,29 @@ module PDF
       # Defines a block to be called just before a new page is started.
       #
       def on_page_create(&block)
-         if block_given?
-            state.on_page_create_callback = block
-         else
-            state.on_page_create_callback = nil
-         end
+        if block_given?
+          state.on_page_create_callback = block
+        else
+          state.on_page_create_callback = nil
+        end
       end
 
-      def start_new_page(options = {})
+      def start_new_page(options = {} of Symbol => String)
         if last_page = state.page
-          last_page_size    = last_page.size
-          last_page_layout  = last_page.layout
+          last_page_size = last_page.size
+          last_page_layout = last_page.layout
           last_page_margins = last_page.margins
         end
 
-        page_options = {:size => options[:size] || last_page_size,
-                        :layout  => options[:layout] || last_page_layout,
-                        :margins => last_page_margins}
+        page_options = {:size    => options[:size] || last_page_size,
+          :layout  => options[:layout] || last_page_layout,
+          :margins => last_page_margins}
         if last_page
-          new_graphic_state = last_page.graphic_state.dup  if last_page.graphic_state
+          new_graphic_state = last_page.graphic_state.dup if last_page.graphic_state
 
-          #erase the color space so that it gets reset on new page for fussy pdf-readers
-          new_graphic_state.color_space = {} if new_graphic_state
-          page_options.merge!(:graphic_state => new_graphic_state)
+          # erase the color space so that it gets reset on new page for fussy pdf-readers
+          new_graphic_state.color_space = {} of Symbol => String if new_graphic_state
+          page_options.merge!({:graphic_state => new_graphic_state})
         end
 
         state.page = PDF::Core::Page.new(self, page_options)
@@ -121,10 +121,10 @@ module PDF
       # draw on it.
       #
       # See Prawn::Document#number_pages for a sample usage of this capability.
-      
+
       def go_to_page(k)
         @page_number = k
-        state.page = state.pages[k-1]
+        state.page = state.pages[k - 1]
       end
 
       def finalize_all_page_contents
@@ -210,12 +210,12 @@ module PDF
       #
       def render_trailer(output)
         trailer_hash = {:Size => state.store.size + 1,
-                        :Root => state.store.root,
-                        :Info => state.store.info}
+          :Root => state.store.root,
+          :Info => state.store.info}
         trailer_hash.merge!(state.trailer) if state.trailer
 
         output << "trailer\n"
-        output << PDF::Core::PdfObject(trailer_hash) << "\n"
+        # output << PDF::Core::PdfObject(trailer_hash) << "\n"
         output << "startxref\n"
         output << @xref_offset << "\n"
         output << "%%EOF" << "\n"

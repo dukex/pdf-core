@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-require_relative "spec_helper"
+require "./spec_helper"
 
 describe "Stream object" do
   it "should compress a stream upon request" do
@@ -11,9 +11,10 @@ describe "Stream object" do
     cstream << "Hi There " * 20
     cstream.compress!
 
-    cstream.filtered_stream.length.should be < stream.length,
+    cstream.filtered_stream.size.should be < stream.size,
       "compressed stream expected to be smaller than source but wasn't"
-    cstream.data[:Filter].should == [:FlateDecode]
+
+    cstream.data[:Filter].should eq([:FlateDecode])
   end
 
   it "should expose sompression state" do
@@ -21,7 +22,7 @@ describe "Stream object" do
     stream << "Hello"
     stream.compress!
 
-    stream.should be_compressed
+    stream.compressed?.should eq(true)
   end
 
   it "should detect from filters if stream is compressed" do
@@ -29,31 +30,30 @@ describe "Stream object" do
     stream << "Hello"
     stream.filters << :FlateDecode
 
-    stream.should be_compressed
+    stream.compressed?.should eq(true)
   end
 
   it "should have Length if in data" do
     stream = PDF::Core::Stream.new
     stream << "hello"
 
-    stream.data[:Length].should == 5
+    stream.data[:Length].should eq(5)
   end
 
   it "should update Length when updated" do
     stream = PDF::Core::Stream.new
     stream << "hello"
-    stream.data[:Length].should == 5
+    stream.data[:Length].should eq(5)
 
     stream << " world"
-    stream.data[:Length].should == 11
+    stream.data[:Length].should eq(11)
   end
 
   it "should corecly handle decode params" do
     stream = PDF::Core::Stream.new
     stream << "Hello"
-    stream.filters << { :FlateDecode => { :Predictor => 15 } }
+    stream.filters << {filter: :FlateDecode, params: {:Predictor => 15}}
 
-    stream.data[:DecodeParms].should == [{ :Predictor => 15 }]
+    stream.data[:DecodeParms].should eq([{:Predictor => 15}])
   end
 end
-

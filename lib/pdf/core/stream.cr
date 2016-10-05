@@ -9,29 +9,30 @@
 module PDF
   module Core
     class Stream
-      attr_reader :filters
+      # attr_reader :filters
+      getter :filters
 
-      def initialize(io = nil)
-        @filtered_stream = ''
+      def initialize(io = "")
+        @filtered_stream = ""
         @stream = io
         @filters = FilterList.new
       end
 
       def <<(io)
-        (@stream ||= '') << io
-        @filtered_stream = nil
+        @stream += io
+        @filtered_stream = ""
         self
       end
 
       def compress!
-        unless @filters.names.include? :FlateDecode
-          @filtered_stream = nil
+        unless @filters.names.includes? :FlateDecode
+          @filtered_stream = ""
           @filters << :FlateDecode
         end
       end
 
       def compressed?
-        @filters.names.include? :FlateDecode
+        @filters.names.includes? :FlateDecode
       end
 
       def empty?
@@ -40,32 +41,32 @@ module PDF
 
       def filtered_stream
         if @stream
-          if @filtered_stream.nil?
+          if @filtered_stream == ""
             @filtered_stream = @stream.dup
 
-            @filters.each do |(filter_name, params)|
-              if filter = PDF::Core::Filters.const_get(filter_name)
-                @filtered_stream = filter.encode @filtered_stream, params
+            @filters.each do |filter_data|
+              if filter = get_filter(filter_data[:filter])
+                @filtered_stream = filter.encode(MemoryIO.new(@filtered_stream), filter_data[:params]).to_s
               end
             end
           end
 
-          @filtered_stream
+          @filtered_stream.not_nil!
           # XXX Fillter stream
         else
-          nil
+          ""
         end
       end
 
-      def length
-        @stream.length
+      def size
+        @stream.size
       end
 
       def object
         if filtered_stream
           "stream\n#{filtered_stream}\nendstream\n"
         else
-          ''
+          ""
         end
       end
 
@@ -74,24 +75,28 @@ module PDF
           filter_names = @filters.names
           filter_params = @filters.decode_params
 
-          d = {
-            :Length => filtered_stream.length
-          }
+          d = Hash(Symbol, Array(Symbol) | Int32 | Array(String | Nil) | Array(Hash(Symbol, Int32) | Symbol | Nil | String)){:Length => filtered_stream.size}
+
           if filter_names.any?
             d[:Filter] = filter_names
           end
-          if filter_params.any? {|f| !f.nil? }
+
+          if filter_params.any? { |f| !f.nil? }
             d[:DecodeParms] = filter_params
           end
 
           d
         else
-          {}
+          {} of Symbol => Nil
         end
       end
 
       def inspect
-        "#<#{self.class.name}:0x#{'%014x' % object_id} @stream=#{@stream.inspect}, @filters=#{@filters.inspect}>"
+        "#<#{self.class.name}:0x#{"%014x" % object_id} @stream=#{@stream.inspect}, @filters=#{@filters.inspect}>"
+      end
+
+      macro get_filter(name)
+        PDF::Core::Filters.get({{name.id}})
       end
     end
   end

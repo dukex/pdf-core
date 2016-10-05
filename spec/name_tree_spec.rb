@@ -1,4 +1,4 @@
-require_relative "spec_helper"
+require "./spec_helper"
 
 def tree_dump(tree)
   if tree.is_a?(PDF::Core::NameTree::Node)
@@ -18,15 +18,15 @@ def tree_value(name, value)
   PDF::Core::NameTree::Value.new(name, value)
 end
 
-# FIXME: This is a dummy that's meant to stand in for a Prawn::Document.
-# It causes the tests to pass but I have no idea if it's really a
+# FIXME: This is a dummy that"s meant to stand in for a Prawn::Document.
+# It causes the tests to pass but I have no idea if it"s really a
 # sufficient test double or not.
 class RefExposingDocument
   def initialize
-    @object_store = []
+    @object_store = [] of String
   end
 
-  attr_reader :object_store
+  # attr_reader :object_store
 
   def ref!(obj)
     @object_store << obj
@@ -34,10 +34,8 @@ class RefExposingDocument
 end
 
 describe "Name Tree" do
-  before(:each) { @pdf = RefExposingDocument.new }
-
   it "should have no children when first initialized" do
-    node = PDF::Core::NameTree::Node.new(@pdf, 3)
+    node = PDF::Core::NameTree::Node.new(RefExposingDocument.new, 3)
     node.children.length.should == 0
   end
 
@@ -80,7 +78,7 @@ describe "Name Tree" do
   it "should maintain order of already properly ordered nodes" do
     node = PDF::Core::NameTree::Node.new(@pdf, 3)
     tree_add(node, ["eight", 8], ["five", 5], ["four", 4], ["one", 1])
-    tree_add(node, ['seven', 7], ['six', 6], ['three', 3], ['two', 2])
+    tree_add(node, ["seven", 7], ["six", 6], ["three", 3], ["two", 2])
     tree_dump(node).should == "[[[eight=8,five=5],[four=4,one=1]],[[seven=7,six=6],[three=3,two=2]]]"
   end
 

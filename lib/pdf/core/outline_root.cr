@@ -1,7 +1,7 @@
 module PDF
   module Core
-    class OutlineRoot #:nodoc:
-      attr_accessor :count, :first, :last
+    class OutlineRoot # :nodoc:
+      # attr_accessor :count, :first, :last
 
       def initialize
         @count = 0

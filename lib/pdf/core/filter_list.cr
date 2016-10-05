@@ -1,18 +1,16 @@
-module PDF 
+module PDF
   module Core
     class FilterList
       def initialize
-        @list = []
+        @list = [] of NamedTuple(filter: Symbol, params: Hash(Symbol, Int32) | Symbol | Nil | String)
       end
 
       def <<(filter)
         case filter
         when Symbol
-          @list << [filter, nil]
-        when ::Hash
-          filter.each do |name, params|
-            @list << [name, params]
-          end
+          @list.push({filter: filter, params: nil})
+        when ::NamedTuple
+          @list.push(filter)
         else
           raise "Can not interpret input as filter: #{filter.inspect}"
         end
@@ -23,17 +21,18 @@ module PDF
       def normalized
         @list
       end
-      alias_method :to_a, :normalized
+
+      # alias_method :to_a, :normalized
 
       def names
-        @list.map do |(name, _)|
-          name
+        @list.map do |name|
+          name[:filter]
         end
       end
 
       def decode_params
-        @list.map do |(_, params)|
-          params
+        @list.map do |params|
+          params[:params]
         end
       end
 
@@ -41,9 +40,9 @@ module PDF
         @list.inspect
       end
 
-      def each(&block)
+      def each
         @list.each do |filter|
-          block.call(filter)
+          yield(filter)
         end
       end
     end

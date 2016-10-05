@@ -7,20 +7,20 @@
 # This is free software. Please see the LICENSE and COPYING files for details.
 #
 
-require_relative 'graphics_state'
+require "./graphics_state"
 
 module PDF
   module Core
-    class Page #:nodoc:
-      attr_accessor :document, :margins, :stack
-      attr_writer :content, :dictionary
+    class Page # :nodoc:
+      # attr_accessor :document, :margins, :stack
+      # attr_writer :content, :dictionary
 
-      def initialize(document, options={})
+      def initialize(document, options = {} of Symbol => String)
         @document = document
-        @margins  = options[:margins] || { :left    => 36,
-                                           :right   => 36,
-                                           :top     => 36,
-                                           :bottom  => 36  }
+        @margins = options[:margins] || {:left   => 36,
+          :right  => 36,
+          :top    => 36,
+          :bottom => 36}
         @stack = GraphicStateStack.new(options[:graphic_state])
         if options[:object_id]
           init_from_object(options)
@@ -45,7 +45,7 @@ module PDF
       end
 
       def size
-        defined?(@size) && @size || dimensions[2,2]
+        defined?(@size) && @size || dimensions[2, 2]
       end
 
       def in_stamp_stream?
@@ -53,7 +53,7 @@ module PDF
       end
 
       def stamp_stream(dictionary)
-        @stamp_stream     = ""
+        @stamp_stream = ""
         @stamp_dictionary = dictionary
         graphic_stack_size = stack.stack.size
 
@@ -67,8 +67,8 @@ module PDF
 
         @stamp_dictionary << @stamp_stream
 
-        @stamp_stream      = nil
-        @stamp_dictionary  = nil
+        @stamp_stream = "nil"
+        @stamp_dictionary = "nil"
       end
 
       def content
@@ -83,7 +83,7 @@ module PDF
         if dictionary.data[:Resources]
           document.deref(dictionary.data[:Resources])
         else
-          dictionary.data[:Resources] = {}
+          dictionary.data[:Resources] = {} of Symbol => String
         end
       end
 
@@ -91,7 +91,7 @@ module PDF
         if resources[:Font]
           document.deref(resources[:Font])
         else
-          resources[:Font] = {}
+          resources[:Font] = {} of Symbol => String
         end
       end
 
@@ -99,7 +99,7 @@ module PDF
         if resources[:XObject]
           document.deref(resources[:XObject])
         else
-          resources[:XObject] = {}
+          resources[:XObject] = {} of Symbol => String
         end
       end
 
@@ -107,7 +107,7 @@ module PDF
         if resources[:ExtGState]
           document.deref(resources[:ExtGState])
         else
-          resources[:ExtGState] = {}
+          resources[:ExtGState] = {} of Symbol => String
         end
       end
 
@@ -129,7 +129,7 @@ module PDF
         return inherited_dictionary_value(:MediaBox) if imported_page?
 
         coords = PDF::Core::PageGeometry::SIZES[size] || size
-        [0,0] + case(layout)
+        [0, 0] + case (layout)
         when :portrait
           coords
         when :landscape
@@ -140,34 +140,32 @@ module PDF
         end
       end
 
-      private
-
-      def init_from_object(options)
+      private def init_from_object(options)
         @dictionary = options[:object_id].to_i
 
         unless dictionary.data[:Contents].is_a?(Array) # content only on leafs
-          @content    = dictionary.data[:Contents].identifier
+          @content = dictionary.data[:Contents].identifier
         end
 
-        @stamp_stream      = nil
-        @stamp_dictionary  = nil
-        @imported_page     = true
+        @stamp_stream = "nil"
+        @stamp_dictionary = "nil"
+        @imported_page = true
       end
 
-      def init_new_page(options)
-        @size     = options[:size]    ||  "LETTER"
-        @layout   = options[:layout]  || :portrait
+      private def init_new_page(options)
+        @size = options[:size] || "LETTER"
+        @layout = options[:layout] || :portrait
 
-        @stamp_stream      = nil
-        @stamp_dictionary  = nil
-        @imported_page     = false
+        @stamp_stream = "nil"
+        @stamp_dictionary = "nil"
+        @imported_page = false
 
-        @content    = document.ref({})
+        @content = document.ref({} of Symbol => String)
         content << "q" << "\n"
-        @dictionary = document.ref(:Type        => :Page,
-                                   :Parent      => document.state.store.pages,
-                                   :MediaBox    => dimensions,
-                                   :Contents    => content)
+        # @dictionary = document.ref(:Type        => :Page,
+        #                            :Parent      => document.state.store.pages,
+        #                            :MediaBox    => dimensions,
+        #                            :Contents    => content)
 
         resources[:ProcSet] = [:PDF, :Text, :ImageB, :ImageC, :ImageI]
       end
@@ -178,9 +176,9 @@ module PDF
       # inheritance chain return the first value that is found for key
       #
       #     inherited_dictionary_value(:MediaBox)
-      #     => [ 0, 0, 595, 842 ]
+      # => [ 0, 0, 595, 842 ]
       #
-      def inherited_dictionary_value(key, local_dict = nil)
+      private def inherited_dictionary_value(key, local_dict = "nil")
         local_dict ||= dictionary.data
 
         if local_dict.has_key?(key)
@@ -188,7 +186,7 @@ module PDF
         elsif local_dict.has_key?(:Parent)
           inherited_dictionary_value(key, local_dict[:Parent].data)
         else
-          nil
+          "nil"
         end
       end
     end

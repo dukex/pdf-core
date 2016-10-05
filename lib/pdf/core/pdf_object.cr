@@ -10,13 +10,13 @@
 #
 module PDF
   module Core
-    module_function
+    # module_function
 
-    def real(num)
+    def self.real(num)
       num.to_f.round(4)
     end
 
-    def real_params(array)
+    def self.real_params(array)
       array.map { |e| real(e) }.join(" ")
     end
 
@@ -38,25 +38,34 @@ module PDF
     #
     #  Examples:
     #
-    #     PdfObject(true)      #=> "true"
-    #     PdfObject(false)     #=> "false"
-    #     PdfObject(1.2124)    #=> "1.2124"
-    #     PdfObject("foo bar") #=> "(foo bar)"
-    #     PdfObject(:Symbol)   #=> "/Symbol"
-    #     PdfObject(["foo",:bar, [1,2]]) #=> "[foo /bar [1 2]]"
+    #     pdf_object(true)      #=> "true"
+    #     pdf_object(false)     #=> "false"
+    #     pdf_object(1.2124)    #=> "1.2124"
+    #     pdf_object("foo bar") #=> "(foo bar)"
+    #     pdf_object(:Symbol)   #=> "/Symbol"
+    #     pdf_object(["foo",:bar, [1,2]]) #=> "[foo /bar [1 2]]"
     #
-    def PdfObject(obj, in_content_stream = false)
-      case(obj)
-      when NilClass   then "null"
-      when TrueClass  then "true"
-      when FalseClass then "false"
-      when Numeric
-        obj = real(obj) unless obj.kind_of?(Integer)
+    def pdf_object(obj : NilClass, in_content_stream)
+      "null"
+    end
 
-        String(obj) # NOTE: this can fail on huge floating point numbers,
-                    # but it seems unlikely to ever happen in practice.
+    def pdf_object(obj : TrueClass, in_content_stream)
+      "true"
+    end
+
+    def pdf_object(obj : FalseClass, in_content_stream)
+      "false"
+    end
+
+    def pdf_object(obj : Numeric, in_content_stream)
+      obj = real(obj) unless obj.kind_of?(Integer)
+      obj.to_s
+    end
+
+    def pdf_object(obj, in_content_stream = false)
+      case (obj)
       when Array
-        "[" << obj.map { |e| PdfObject(e, in_content_stream) }.join(' ') << "]"
+        "[" << obj.map { |e| pdf_object(e, in_content_stream) }.join(' ') << "]"
       when PDF::Core::LiteralString
         obj = obj.gsub(/[\\\n\r\t\b\f\(\)]/) { |m| "\\#{m}" }
         "(#{obj})"
@@ -69,33 +78,33 @@ module PDF
       when String
         obj = utf8_to_utf16(obj) unless in_content_stream
         "<" << string_to_hex(obj) << ">"
-       when Symbol
-         "/" + obj.to_s.unpack("C*").map { |n|
-          if n < 33 || n > 126 || [35,40,41,47,60,62].include?(n)
+      when Symbol
+        "/" + obj.to_s.unpack("C*").map { |n|
+          if n < 33 || n > 126 || [35, 40, 41, 47, 60, 62].include?(n)
             "#" + n.to_s(16).upcase
           else
             [n].pack("C*")
           end
-         }.join
+        }.join
       when ::Hash
         output = "<< "
-        obj.each do |k,v|
+        obj.each do |k, v|
           unless String === k || Symbol === k
             raise PDF::Core::Errors::FailedObjectConversion,
               "A PDF Dictionary must be keyed by names"
           end
-          output << PdfObject(k.to_sym, in_content_stream) << " " <<
-                    PdfObject(v, in_content_stream) << "\n"
+          output << pdf_object(k.to_sym, in_content_stream) << " " <<
+            pdf_object(v, in_content_stream) << "\n"
         end
         output << ">>"
       when PDF::Core::Reference
         obj.to_s
       when PDF::Core::NameTree::Node
-        PdfObject(obj.to_hash)
+        pdf_object(obj.to_hash)
       when PDF::Core::NameTree::Value
-        PdfObject(obj.name) + " " + PdfObject(obj.value)
+        pdf_object(obj.name) + " " + pdf_object(obj.value)
       when PDF::Core::OutlineRoot, PDF::Core::OutlineItem
-        PdfObject(obj.to_hash)
+        pdf_object(obj.to_hash)
       else
         raise PDF::Core::Errors::FailedObjectConversion,
           "This object cannot be serialized to PDF (#{obj.inspect})"

@@ -8,15 +8,15 @@
 
 module PDF
   module Core
-    module Text #:nodoc:
+    module Text # :nodoc:
       # These should be used as a base. Extensions may build on this list
       #
       VALID_OPTIONS = [:kerning, :size, :style]
-      MODES = { :fill => 0, :stroke => 1, :fill_stroke => 2, :invisible => 3,
-                :fill_clip => 4, :stroke_clip => 5, :fill_stroke_clip => 6,
-                :clip => 7 }
+      MODES         = {:fill => 0, :stroke => 1, :fill_stroke => 2, :invisible => 3,
+        :fill_clip => 4, :stroke_clip => 5, :fill_stroke_clip => 6,
+        :clip => 7}
 
-      attr_reader :skip_encoding
+      # attr_reader :skip_encoding
 
       # Low level call to set the current font style and extract text options from
       # an options hash. Should be called from within a save_font block
@@ -24,7 +24,7 @@ module PDF
       def process_text_options(options)
         if options[:style]
           raise "Bad font family" unless font.family
-          font(font.family, :style => options[:style])
+          font(font.family, {:style => options[:style]})
         end
 
         # must compare against false to keep kerning on as default
@@ -56,7 +56,7 @@ module PDF
         @default_kerning = boolean
       end
 
-      alias_method :default_kerning=, :default_kerning
+      # alias_method :default_kerning=, :default_kerning
 
       # Call with no argument to retrieve the current default leading.
       #
@@ -70,7 +70,7 @@ module PDF
       #
       # Defaults to 0
       #
-      def default_leading(number=nil)
+      def default_leading(number = nil)
         if number.nil?
           defined?(@default_leading) && @default_leading || 0
         else
@@ -78,7 +78,7 @@ module PDF
         end
       end
 
-      alias_method :default_leading=, :default_leading
+      # alias_method :default_leading=, :default_leading
 
       # Call with no argument to retrieve the current text direction.
       #
@@ -100,7 +100,7 @@ module PDF
       # * When printing left-to-right, the default text alignment is :left
       # * When printing right-to-left, the default text alignment is :right
       #
-      def text_direction(direction=nil)
+      def text_direction(direction = nil)
         if direction.nil?
           defined?(@text_direction) && @text_direction || :ltr
         else
@@ -108,7 +108,7 @@ module PDF
         end
       end
 
-      alias_method :text_direction=, :text_direction
+      # alias_method :text_direction=, :text_direction
 
       # Call with no argument to retrieve the current fallback fonts.
       #
@@ -142,15 +142,15 @@ module PDF
       # * Increased overhead when fallback fonts are declared as each glyph is
       #   checked to see whether it exists in the current font
       #
-      def fallback_fonts(fallback_fonts=nil)
+      def fallback_fonts(fallback_fonts = nil)
         if fallback_fonts.nil?
-          defined?(@fallback_fonts) && @fallback_fonts || []
+          defined?(@fallback_fonts) && @fallback_fonts || [] of String
         else
           @fallback_fonts = fallback_fonts
         end
       end
 
-      alias_method :fallback_fonts=, :fallback_fonts
+      # alias_method :fallback_fonts=, :fallback_fonts
 
       # Call with no argument to retrieve the current text rendering mode.
       #
@@ -171,10 +171,10 @@ module PDF
       # * :stroke_clip      - stroke text then add to path for clipping
       # * :fill_stroke_clip - fill then stroke text, then add to path for clipping
       # * :clip             - add text to path for clipping
-      def text_rendering_mode(mode=nil)
+      def text_rendering_mode(mode = nil)
         return (defined?(@text_rendering_mode) && @text_rendering_mode || :fill) if mode.nil?
         unless MODES.key?(mode)
-          raise ArgumentError, "mode must be between one of #{MODES.keys.join(', ')} (#{mode})"
+          raise ArgumentError, "mode must be between one of #{MODES.keys.join(", ")} (#{mode})"
         end
         original_mode = self.text_rendering_mode
 
@@ -197,7 +197,7 @@ module PDF
       # For horizontal text, a positive value will increase the space.
       # For veritical text, a positive value will decrease the space.
       #
-      def character_spacing(amount=nil)
+      def character_spacing(amount = nil)
         return defined?(@character_spacing) && @character_spacing || 0 if amount.nil?
         original_character_spacing = character_spacing
         if original_character_spacing == amount
@@ -215,7 +215,7 @@ module PDF
       # For horizontal text, a positive value will increase the space.
       # For veritical text, a positive value will decrease the space.
       #
-      def word_spacing(amount=nil)
+      def word_spacing(amount = nil)
         return defined?(@word_spacing) && @word_spacing || 0 if amount.nil?
         original_word_spacing = word_spacing
         if original_word_spacing == amount
@@ -231,16 +231,16 @@ module PDF
       end
 
       def add_text_content(text, x, y, options)
-        chunks = font.encode_text(text,options)
+        chunks = font.encode_text(text, options)
 
         add_content "\nBT"
 
         if options[:rotate]
           rad = options[:rotate].to_f * Math::PI / 180
-          array = [ Math.cos(rad), Math.sin(rad), -Math.sin(rad), Math.cos(rad), x, y ]
+          array = [Math.cos(rad), Math.sin(rad), -Math.sin(rad), Math.cos(rad), x, y]
           add_content "#{PDF::Core.real_params(array)} Tm"
         else
-          add_content "#{PDF::Core.real_params([x,y])} Td"
+          add_content "#{PDF::Core.real_params([x, y])} Td"
         end
 
         chunks.each do |(subset, string)|
@@ -248,7 +248,7 @@ module PDF
           add_content "/#{font.identifier_for(subset)} #{font_size} Tf"
 
           operation = options[:kerning] && string.is_a?(Array) ? "TJ" : "Tj"
-          add_content PDF::Core::PdfObject(string, true) << " " << operation
+          # add_content PDF::Core::PdfObject(string, true) << " " << operation
         end
 
         add_content "ET\n"

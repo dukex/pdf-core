@@ -6,18 +6,20 @@
 #
 # This is free software. Please see the LICENSE and COPYING files for details.
 
-require 'zlib'
+require "zlib"
 
 module PDF
   module Core
     module Filters
       module FlateDecode
         def self.encode(stream, params = nil)
-          Zlib::Deflate.deflate(stream)
+          Zlib::Deflate.gzip(stream)
         end
 
         def self.decode(stream, params = nil)
-          Zlib::Inflate.inflate(stream)
+          Zlib::Inflate.gzip(stream) do |s|
+            s.gets_to_end
+          end
         end
       end
 
@@ -31,6 +33,14 @@ module PDF
           stream
         end
       end
+
+      def self.get(type = :FlateDecode)
+        PDF::Core::Filters::FlateDecode
+      end
+
+      # def self.get(type = :DCTDecode)
+      #   PDF::Core::Filters::DCTDecode
+      # end
     end
   end
 end

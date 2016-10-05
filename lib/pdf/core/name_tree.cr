@@ -8,20 +8,20 @@
 #
 module PDF
   module Core
-    module NameTree #:nodoc:
-      class Node #:nodoc:
-        attr_reader :children
-        attr_reader :limit
-        attr_reader :document
-        attr_accessor :parent
-        attr_accessor :ref
+    module NameTree # :nodoc:
+      class Node    # :nodoc:
+        # attr_reader :children
+        # attr_reader :limit
+        # attr_reader :document
+        # attr_accessor :parent
+        # attr_accessor :ref
 
-        def initialize(document, limit, parent=nil)
+        def initialize(document : String, limit, parent = "nil")
           @document = document
-          @children = []
+          @children = [] of String
           @limit = limit
           @parent = parent
-          @ref = nil
+          @ref = "nil"
         end
 
         def empty?
@@ -41,7 +41,7 @@ module PDF
         end
 
         def to_hash
-          hash = {}
+          hash = {} of Symbol => String
 
           hash[:Limits] = [least, greatest] if parent
           if leaf?
@@ -104,57 +104,53 @@ module PDF
         def deep_copy
           node = dup
           node.instance_variable_set("@children",
-                                     Marshal.load(Marshal.dump(children)))
+            Marshal.load(Marshal.dump(children)))
           node.instance_variable_set("@ref",
-                                     node.ref ? node.ref.deep_copy : nil)
+            node.ref ? node.ref.deep_copy : nil)
           node
         end
 
-        protected
+        protected def split(node)
+          new_child = new_node(self)
+          split_children(node, node, new_child)
+          index = children.index(node)
+          children.insert(index + 1, new_child)
+          split! if children.length > limit
+        end
 
-          def split(node)
-            new_child = new_node(self)
-            split_children(node, node, new_child)
-            index = children.index(node)
-            children.insert(index+1, new_child)
-            split! if children.length > limit
+        private def new_node(parent = nil)
+          node = Node.new(document, limit, parent)
+          node.ref = document.ref!(node)
+          return node
+        end
+
+        private def split_children(node, left, right)
+          half = (node.limit + 1)/2
+
+          left_children, right_children = node.children[0...half], node.children[half..-1]
+
+          left.children.replace(left_children)
+          right.children.replace(right_children)
+
+          unless node.leaf?
+            left_children.each { |child| child.parent = left }
+            right_children.each { |child| child.parent = right }
           end
+        end
 
-        private
-
-          def new_node(parent=nil)
-            node = Node.new(document, limit, parent)
-            node.ref = document.ref!(node)
-            return node
+        private def insertion_point(value)
+          children.each_with_index do |child, index|
+            return index if child >= value
           end
-
-          def split_children(node, left, right)
-            half = (node.limit+1)/2
-
-            left_children, right_children = node.children[0...half], node.children[half..-1]
-
-            left.children.replace(left_children)
-            right.children.replace(right_children)
-
-            unless node.leaf?
-              left_children.each { |child| child.parent = left }
-              right_children.each { |child| child.parent = right }
-            end
-          end
-
-          def insertion_point(value)
-            children.each_with_index do |child, index|
-              return index if child >= value
-            end
-            return children.length
-          end
+          return children.length
+        end
       end
 
-      class Value #:nodoc:
-        include Comparable
+      class Value # :nodoc:
+        # # include Comparable
 
-        attr_reader :name
-        attr_reader :value
+        # attr_reader :name
+        # attr_reader :value
 
         def initialize(name, value)
           @name, @value = PDF::Core::LiteralString.new(name), value

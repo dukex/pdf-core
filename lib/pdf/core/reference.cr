@@ -6,26 +6,25 @@
 #
 # This is free software. Please see the LICENSE and COPYING files for details.
 
-
 module PDF
   module Core
-    class Reference #:nodoc:
+    class Reference # :nodoc:
 
-      attr_accessor :gen, :data, :offset, :stream, :identifier
+      # attr_accessor :gen, :data, :offset, :stream, :identifier
 
       def initialize(id, data)
         @identifier = id
-        @gen        = 0
-        @data       = data
-        @stream     = Stream.new
+        @gen = 0
+        @data = data
+        @stream = Stream.new
       end
 
       def object
         output = "#{@identifier} #{gen} obj\n"
         unless @stream.empty?
-          output << PDF::Core::PdfObject(data.merge @stream.data) << "\n" << @stream.object
+          output << PDF::Core::PdfObject.new(data.merge @stream.data) << "\n" << @stream.object
         else
-          output << PDF::Core::PdfObject(data) << "\n"
+          output << PDF::Core::PdfObject.new(data) << "\n"
         end
 
         output << "endobj\n"
@@ -43,7 +42,7 @@ module PDF
       # Creates a deep copy of this ref. If +share+ is provided, shares the
       # given dictionary entries between the old ref and the new.
       #
-      def deep_copy(share=[])
+      def deep_copy(share = [] of String)
         r = dup
 
         case r.data
@@ -64,14 +63,12 @@ module PDF
 
       # Replaces the data and stream with that of other_ref.
       def replace(other_ref)
-        @data   = other_ref.data
+        @data = other_ref.data
         @stream = other_ref.stream
       end
     end
 
-    module_function
-
-    def Reference(*args, &block) #:nodoc:
+    def reference(*args, &block) # :nodoc:
       Reference.new(*args, &block)
     end
   end
