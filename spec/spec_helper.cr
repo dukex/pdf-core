@@ -5,7 +5,7 @@
 # puts "PDF::Core specs: Running"
 
 require "spec"
-
+require "expect"
 require "../lib/pdf/core"
 
 # require "pdf/reader"

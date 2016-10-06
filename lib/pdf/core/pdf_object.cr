@@ -20,15 +20,17 @@ module PDF
       array.map { |e| real(e) }.join(" ")
     end
 
-    def utf8_to_utf16(str)
-      "\xFE\xFF".force_encoding(::Encoding::UTF_16BE) + str.encode(::Encoding::UTF_16BE)
+    def self.utf8_to_utf16(str)
+      # "\xFE\xFF".force_encoding(::Encoding::UTF_16BE) + str.encode(::Encoding::UTF_16BE)
+      str
     end
 
     # encodes any string into a hex representation. The result is a string
     # with only 0-9 and a-f characters. That result is valid ASCII so tag
     # it as such to account for behaviour of different ruby VMs
-    def string_to_hex(str)
-      str.unpack("H*").first.force_encoding(::Encoding::US_ASCII)
+    def self.string_to_hex(str)
+      # str.unpack("H*").first.force_encoding(::Encoding::US_ASCII)
+      str.to_i(16)
     end
 
     # Serializes Ruby objects to their PDF equivalents.  Most primitive objects
@@ -45,70 +47,80 @@ module PDF
     #     pdf_object(:Symbol)   #=> "/Symbol"
     #     pdf_object(["foo",:bar, [1,2]]) #=> "[foo /bar [1 2]]"
     #
-    def pdf_object(obj : NilClass, in_content_stream)
+    def self.pdf_object(obj : Nil, in_content_stream = false)
       "null"
     end
 
-    def pdf_object(obj : TrueClass, in_content_stream)
-      "true"
+    def self.pdf_object(obj : Bool, in_content_stream = false)
+      obj ? "true" : false
     end
 
-    def pdf_object(obj : FalseClass, in_content_stream)
-      "false"
-    end
-
-    def pdf_object(obj : Numeric, in_content_stream)
+    def self.pdf_object(obj : Int32, in_content_stream = false)
       obj = real(obj) unless obj.kind_of?(Integer)
       obj.to_s
     end
 
-    def pdf_object(obj, in_content_stream = false)
-      case (obj)
-      when Array
-        "[" << obj.map { |e| pdf_object(e, in_content_stream) }.join(' ') << "]"
-      when PDF::Core::LiteralString
-        obj = obj.gsub(/[\\\n\r\t\b\f\(\)]/) { |m| "\\#{m}" }
-        "(#{obj})"
-      when Time
-        obj = obj.strftime("D:%Y%m%d%H%M%S%z").chop.chop + "'00'"
-        obj = obj.gsub(/[\\\n\r\t\b\f\(\)]/) { |m| "\\#{m}" }
-        "(#{obj})"
-      when PDF::Core::ByteString
-        "<" << obj.unpack("H*").first << ">"
-      when String
-        obj = utf8_to_utf16(obj) unless in_content_stream
-        "<" << string_to_hex(obj) << ">"
-      when Symbol
-        "/" + obj.to_s.unpack("C*").map { |n|
-          if n < 33 || n > 126 || [35, 40, 41, 47, 60, 62].include?(n)
-            "#" + n.to_s(16).upcase
-          else
-            [n].pack("C*")
-          end
-        }.join
-      when ::Hash
-        output = "<< "
-        obj.each do |k, v|
-          unless String === k || Symbol === k
-            raise PDF::Core::Errors::FailedObjectConversion,
-              "A PDF Dictionary must be keyed by names"
-          end
-          output << pdf_object(k.to_sym, in_content_stream) << " " <<
-            pdf_object(v, in_content_stream) << "\n"
+    def self.pdf_object(obj : PDF::Core::Reference, in_content_stream = false)
+      obj.to_s
+    end
+
+    def self.pdf_object(obj : PDF::Core::NameTree::Node, in_content_stream = false)
+      pdf_object(obj.to_hash)
+    end
+
+    def self.pdf_object(obj : PDF::Core::NameTree::Value, in_content_stream = false)
+      pdf_object(obj.name) + " " + pdf_object(obj.value)
+    end
+
+    def self.pdf_object(obj : PDF::Core::OutlineRoot | PDF::Core::OutlineItem, in_content_stream = false)
+      pdf_object(obj.to_hash)
+    end
+
+    def self.pdf_object(obj : Array, in_content_stream = false)
+      "[" + obj.map { |e| pdf_object(e, in_content_stream) }.join(' ') + "]"
+    end
+
+    def self.pdf_object(obj : PDF::Core::LiteralString, in_content_stream = false)
+      obj = obj.gsub(/[\\\n\r\t\b\f\(\)]/) { |m| "\\#{m}" }
+      "(#{obj})"
+    end
+
+    def self.pdf_object(obj : Time, in_content_stream = false)
+      obj = obj.strftime("D:%Y%m%d%H%M%S%z").chop.chop + "'00'"
+      obj = obj.gsub(/[\\\n\r\t\b\f\(\)]/) { |m| "\\#{m}" }
+      "(#{obj})"
+    end
+
+    def self.pdf_object(obj : PDF::Core::ByteString, in_content_stream = false)
+      "<" + obj.unpack("H*").first + ">"
+    end
+
+    def self.pdf_object(obj : String, in_content_stream = false)
+      obj = utf8_to_utf16(obj) unless in_content_stream
+      "<" + string_to_hex(obj) + ">"
+    end
+
+    def self.pdf_object(obj : Symbol, in_content_stream = false)
+      "/" + obj.to_s.unpack("C*").map { |n|
+        if n < 33 || n > 126 || [35, 40, 41, 47, 60, 62].include?(n)
+          "#" + n.to_s(16).upcase
+        else
+          [n].pack("C*")
         end
-        output << ">>"
-      when PDF::Core::Reference
-        obj.to_s
-      when PDF::Core::NameTree::Node
-        pdf_object(obj.to_hash)
-      when PDF::Core::NameTree::Value
-        pdf_object(obj.name) + " " + pdf_object(obj.value)
-      when PDF::Core::OutlineRoot, PDF::Core::OutlineItem
-        pdf_object(obj.to_hash)
-      else
-        raise PDF::Core::Errors::FailedObjectConversion,
-          "This object cannot be serialized to PDF (#{obj.inspect})"
+      }.join
+    end
+
+    def self.pdf_object(obj : ::Hash, in_content_stream = false)
+      output = "<< "
+      obj.each do |k, v|
+        unless String === k || Symbol === k
+          raise PDF::Core::Errors::FailedObjectConversion,
+            "A PDF Dictionary must be keyed by names"
+        end
+        output << pdf_object(k.to_sym, in_content_stream) << " " <<
+          pdf_object(v, in_content_stream) << "\n"
       end
+      output << ">>"
     end
   end
 end

@@ -11,20 +11,37 @@ module PDF
     class Reference # :nodoc:
 
       # attr_accessor :gen, :data, :offset, :stream, :identifier
+      property :gen
+      getter :data
 
-      def initialize(id, data)
+      def initialize(id : Int32)
         @identifier = id
         @gen = 0
+        @stream = Stream.new
+        @data = nil
+      end
+
+      def initialize(id : Int32, data : String)
+        initialize id
         @data = data
+      end
+
+      def initialize(id : Int32, data : Bool)
+        initialize id
+        @data = data
+      end
+
+      def initialize(id : Int32, data : Array(Int32 | String))
+        initialize id
         @stream = Stream.new
       end
 
       def object
         output = "#{@identifier} #{gen} obj\n"
         unless @stream.empty?
-          output << PDF::Core::PdfObject.new(data.merge @stream.data) << "\n" << @stream.object
+          output << PDF::Core.pdf_object(data.merge @stream.data) << "\n" << @stream.object
         else
-          output << PDF::Core::PdfObject.new(data) << "\n"
+          output << PDF::Core.pdf_object(data) << "\n"
         end
 
         output << "endobj\n"

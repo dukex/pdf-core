@@ -13,18 +13,18 @@ module PDF
 
       # attr_reader :min_version
 
-      def initialize(opts = {} of Symbol => String)
-        @objects = {} of Symbol => String
-        @identifiers = [] of String
+      def initialize(opts = Hash)
+        # @objects = {} of Symbol => String
+        # @identifiers = [] of String
 
-        @info ||= ref(opts[:info] || {} of Symbol => String).identifier
+        # @info ||= ref(opts[:info] || {} of Symbol => String).identifier
         # @root  ||= ref(:Type => :Catalog).identifier
-        if opts[:print_scaling] == :none
-          root.data[:ViewerPreferences] = {:PrintScaling => :None}
-        end
-        if pages.nil?
-          # root.data[:Pages] = ref(:Type => :Pages, :Count => 0, :Kids => [])
-        end
+        # if opts[:print_scaling] == :none
+        # root.data[:ViewerPreferences] = {:PrintScaling => :None}
+        # end
+        # if pages.nil?
+        # root.data[:Pages] = ref(:Type => :Pages, :Count => 0, :Kids => [])
+        # end
       end
 
       def ref(data, &block)

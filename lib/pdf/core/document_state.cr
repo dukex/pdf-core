@@ -1,24 +1,29 @@
 module PDF
   module Core
     class DocumentState # :nodoc:
-      def initialize(options)
-        normalize_metadata(options)
+      getter :compress, :encrypt, :skip_encoding, :store
 
-        # if options[:print_scaling]
-        #   @store = PDF::Core::ObjectStore.new(:info => options[:info],
-        #                                       :print_scaling => options[:print_scaling])
-        # else
-        #   @store = PDF::Core::ObjectStore.new(:info => options[:info])
-        # end
+      @compress : Bool
+      @encrypt : Bool
+      @skip_encoding : Bool
+
+      def initialize(options : Hash)
+        # normalize_metadata(options)
+
+        if options[:print_scaling]
+          @store = PDF::Core::ObjectStore.new({info: options[:info], print_scaling: options[:print_scaling]})
+        else
+          @store = PDF::Core::ObjectStore.new({info: options[:info]})
+        end
 
         @version = 1.3
         @pages = [] of String
         @page = "x"
-        @trailer = options.fetch(:trailer, {} of Symbol => String)
-        @compress = options.fetch(:compress, false)
-        @encrypt = options.fetch(:encrypt, false)
-        @encryption_key = options[:encryption_key]
-        @skip_encoding = options.fetch(:skip_encoding, false)
+        # @trailer = options.fetch(:trailer) || {} of Symbol => Int32
+        @compress = options[:compress] == true || false
+        @encrypt = options[:encrypt] == true || false
+        # @encryption_key = options[:encryption_key]
+        @skip_encoding = options[:skip_encoding] == true || false
         @before_render_callbacks = [] of String
         @on_page_create_callback = "x"
       end
@@ -37,13 +42,13 @@ module PDF
         end
       end
 
-      def normalize_metadata(options)
-        options[:info] ||= {} of Symbol => String
-        options[:info][:Creator] ||= "Prawn"
-        options[:info][:Producer] ||= "Prawn"
+      # def normalize_metadata(options)
+      #   options[:info] ||= 1
+      #   options[:info][:Creator] ||= "Prawn"
+      #   options[:info][:Producer] ||= "Prawn"
 
-        options[:info]
-      end
+      #   options[:info]
+      # end
 
       def insert_page(page, page_number)
         pages.insert(page_number, page)

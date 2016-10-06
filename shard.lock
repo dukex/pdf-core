@@ -1,0 +1,6 @@
+version: 1.0
+shards:
+  expect:
+    github: dukex/expect.cr
+    commit: e9b7ef504d5acbab8cac825f8e8779d8207c979d
+
